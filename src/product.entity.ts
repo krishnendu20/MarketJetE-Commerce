@@ -15,7 +15,7 @@ export class ProductEntity{
   @Column()
   price: string;
 
-  @ManyToOne(() => ManagerEntity, manager => manager.products)
-manager: ManagerEntity;
-
+  
+  @Column()
+  filename: string;
 }

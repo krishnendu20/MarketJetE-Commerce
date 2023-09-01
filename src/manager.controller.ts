@@ -1,6 +1,7 @@
 import {Body, Controller, Get,Param, Post,UsePipes,ValidationPipe,Delete, UseInterceptors,Put,Patch,ParseIntPipe, NotFoundException, HttpStatus, Query, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Session, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { ManagerService } from "./manager.service";
-import{ManagerDTO, ManagerUpdateDTO}from "./manager.dto";
+import{ManagerDTO}from "./manager.dto";
+import {ManagerUpdateDto} from "./managerupdatedto.dto"
 import { FileInterceptor } from "@nestjs/platform-express";
 import{diskStorage} from  "multer";
 import { ManagerEntity } from './manager.entity';
@@ -53,24 +54,69 @@ export class ManagerController {
       return this.managerService.getManagerByID(id);
     }
 
-    @Post('/addmanager')
-    @UsePipes(new ValidationPipe())
-    addAdmin(@Body() data: ManagerDTO): object {
-        return this.managerService.addManager(data);
-    }
+    
 
-    @Put('/updatemanager')
-    @UseGuards(SessionGuard)
-    //@UsePipes(new ValidationPipe())
-    updateAdmin(@Body() data: ManagerUpdateDTO, @Session() session): object {
-        console.log(session.email);
-        return this.managerService.updateManager(session.email, data);
-    }
-    @Put('/updatemanager/:id')
-    @UsePipes(new ValidationPipe())
-    updateManagerbyID(@Param() id: number, @Body() data: ManagerDTO): object {
-        return this.managerService.updateManagerById(id, data);
-    }
+
+
+    @Post('/addmanager')
+  
+    @UseInterceptors(FileInterceptor('filename',
+  
+    {storage:diskStorage({
+  
+      destination: './managers',
+  
+      filename: function (req, file, cb) {
+  
+        cb(null,Date.now()+file.originalname)
+  
+      }
+  
+    })
+  
+  }))
+  
+  insertauthor(@Body() mydto:ManagerDTO,@UploadedFile(  new ParseFilePipe({
+  
+    validators: [
+  
+      new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 4 }),
+  
+      new FileTypeValidator({ fileType: 'png|jpg|jpeg|' }),
+  
+    ],
+  
+  }),) file: Express.Multer.File){
+  
+   
+  
+  mydto.filename = file.filename;  
+  
+   
+  
+  return this.managerService.addManager(mydto);
+  
+  // console.log(file)
+  
+  }
+
+
+   @Put('/updatemanager/')
+        // @UseGuards(SessionGuard)
+        @UsePipes(new ValidationPipe())
+        updateManager(@Session() session,@Body('name') name: string, @Body('id') id: string): any {
+        // console.log(session.email);
+          return this.managerService.updateManager(name, id);
+        }
+
+        @Put('/updatemanager/:id')
+        @UsePipes(new ValidationPipe())
+        updateManagerbyid(
+          @Body() mydto: ManagerUpdateDto,
+          @Param('id', ParseIntPipe) id: number,
+        ): any {
+          return this.managerService.updateManagerbyid(mydto, id);
+        }
   
     @Delete('/deletemanager/:id')
     deleteManagerbyid(@Param('id', ParseIntPipe) id: number): any {
@@ -78,43 +124,44 @@ export class ManagerController {
     }
   
     @Post('/signup')
-    @UseInterceptors(FileInterceptor('filename',
-    {storage:diskStorage({
-      destination: './uploads',
-      filename: function (req, file, cb) {
-        cb(null,Date.now()+file.originalname)
-      }
-    })
-    
-    }))
+@UseInterceptors(FileInterceptor('filename',
+{storage:diskStorage({
+  destination: './uploads',
+  filename: function (req, file, cb) {
+    cb(null,Date.now()+file.originalname)
+  }
+})
 
-    signup(@Body() mydto:ManagerDTO,@UploadedFile( new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 4 }),
-          new FileTypeValidator({ fileType: 'png|jpg|jpeg|' }),
-        ],
-      }),) file: Express.Multer.File){
-      
-      mydto.filename = file.filename;  
-      
-      return this.managerService.signup(mydto);
-      // console.log(file)
-      }
+}))
+signup(@Body() mydto:ManagerDTO,@UploadedFile(  new ParseFilePipe({
+  validators: [
+    new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 4 }),
+    new FileTypeValidator({ fileType: 'png|jpg|jpeg|' }),
+  ],
+}),) file: Express.Multer.File){
 
-      @Post('/signin')
-      async signin(@Session() session, @Body() ManagerDTO : ManagerDTO) {
-  
-          if (await this.managerService.signin(ManagerDTO)) {
-              //  session.email = ManagerDTO.email;
-              //  console.log(session.email);
-              return {message:"Logged in Successfully"};
-          }
-          else {
-  
-            return {message:"Invalid"};
-          }
-            // return this.managerService.signin(data);
-      }
+mydto.filename = file.filename;  
+
+return this.managerService.signup(mydto);
+// console.log(file)
+}
+
+@Post('/signin')
+@UsePipes(new ValidationPipe())
+async signin(@Session() session, @Body() mydto:ManagerDTO)
+{
+  const res = await (this.managerService.signin(mydto));
+if(res==true)
+{
+session.email = mydto.email;
+return (session.email);
+}
+else
+{
+throw new UnauthorizedException({ message: "Invalid!!" });
+}
+ 
+}
   
 
       @Get('/signout')
@@ -130,7 +177,7 @@ export class ManagerController {
         }
       }
 
-      //Product Part
+      //Product Part 
 
       @Get('/pdashboard')
       getProduct(): any {
@@ -147,24 +194,64 @@ export class ManagerController {
       return this.productService.getProductByID(id);
     }
 
-    @Post('/addproduct')
-    @UsePipes(new ValidationPipe())
-    addProduct(@Body() data: ProductDTO): object {
-        return this.productService.addProduct(data);
-    }
-    @Put('/updateproduct/')
-    // @UseGuards(SessionGuard)
-    @UsePipes(new ValidationPipe())
-    updateProduct(@Body('name') name: string,@Body('quantity') quantity: string, @Body('id') id: number):any {
-        return this.productService.updateProduct(name,quantity,id);
-    } 
+ 
 
-    
-    @Put('/updateproduct/:id')
-    @UsePipes(new ValidationPipe())
-    updateProductbyID(@Param() id: number, @Body() data: ProductDTO): object {
-        return this.productService.updateProductById(id, data);
-    }
+    @Post('/addproduct')
+  
+    @UseInterceptors(FileInterceptor('filename',
+  
+    {storage:diskStorage({
+  
+      destination: './products',
+  
+      filename: function (req, file, cb) {
+  
+        cb(null,Date.now()+file.originalname)
+  
+      }
+  
+    })
+  
+  }))
+  
+  addproduct(@Body() mydto:ProductDTO,@UploadedFile(  new ParseFilePipe({
+  
+    validators: [
+  
+      new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 4 }),
+  
+      new FileTypeValidator({ fileType: 'png|jpg|jpeg|' }),
+  
+    ],
+  
+  }),) file: Express.Multer.File){
+  
+   
+  
+  mydto.filename = file.filename;  
+  
+   
+  
+  return this.productService.addProduct(mydto);
+  }
+
+
+  @Put('/updateproduct/')
+  // @UseGuards(SessionGuard)
+  @UsePipes(new ValidationPipe())
+  updateProduct(@Session() session,@Body('name') name: string, @Body('id') id: string): any {
+  // console.log(session.email);
+    return this.productService.updateProduct(name, id);
+  }
+
+  @Put('/updateproduct/:id')
+  @UsePipes(new ValidationPipe())
+  updateProductbyid(
+    @Body() mydto: ManagerUpdateDto,
+    @Param('id', ParseIntPipe) id: number,
+  ): any {
+    return this.productService.updateProductbyid(mydto, id);
+  }
 
     @Delete('/deleteproduct/:id')
     deleteProductbyid(@Param('id', ParseIntPipe) id: number): any {

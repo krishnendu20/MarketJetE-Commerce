@@ -8,7 +8,7 @@ imports:[ManagerModule,TypeOrmModule.forRoot(
 host:'localhost',
 port: 5432,
 username:'postgres',
-password: '1234',
+password: '4321',
 database: 'fhub',
 autoLoadEntities: true,
 synchronize: true,

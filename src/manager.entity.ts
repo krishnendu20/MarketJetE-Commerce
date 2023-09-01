@@ -21,7 +21,4 @@ export class ManagerEntity{
   @Column()
   filename: string;
 
-  @OneToMany(() => ProductEntity, product => product.manager)
- products: ProductEntity[];
- 
 }

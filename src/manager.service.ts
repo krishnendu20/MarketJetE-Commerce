@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { ManagerDTO, ManagerUpdateDTO } from './manager.dto';
+import { ManagerDTO } from './manager.dto'
+import {ManagerUpdateDto} from "./managerupdatedto.dto"
+
 import {InjectRepository} from "@nestjs/typeorm";
 import { ManagerController } from './manager.controller';
 import { ManagerEntity } from './manager.entity';
@@ -36,18 +38,35 @@ import { MailerService } from '@nestjs-modules/mailer';
         return this.managerRepo.find();
     }
     
-    async addManager(data: ManagerDTO): Promise<ManagerEntity> {
-        return this.managerRepo.save(data);
-    }
+    addManager(mydto:ManagerDTO):any {
+        const manageraccount = new ManagerEntity()
+        manageraccount.name = mydto.name;
+        manageraccount.contact = mydto.contact;
+        manageraccount.email = mydto.email;
+        manageraccount.password = mydto.password;
+        manageraccount.filename = mydto.filename;
+       return this.managerRepo.save(manageraccount);
+          }
+    
+     
+    
+          async addmanager(mydto) {
+            const salt = await bcrypt.genSalt();
+            const hassedpassed = await bcrypt.hash(mydto.password, salt);
+            mydto.password= hassedpassed;
+            return this.managerRepo.save(mydto);
+            }
 
-    async updateManager(email:string,data: ManagerUpdateDTO): Promise<ManagerEntity> {
-        await this.managerRepo.update({email:email}, data);
-        return this.managerRepo.findOneBy({ id: data.id });
-    }
-    async updateManagerById(id: number, data: ManagerDTO): Promise<ManagerEntity> {
-        await this.managerRepo.update(id, data);
-        return this.managerRepo.findOneBy({ id });
-    }
+            updateManager(name: string,id: any):any {
+                console.log(name+id);
+                return this.managerRepo.update(id,{name:name});
+                }
+                updateManagerbyid(mydto:ManagerUpdateDto,id):any {
+                return this.managerRepo.update(id,mydto);
+                   }
+        
+         
+    
 
     deleteManagerbyid(id):any {
     
@@ -55,24 +74,27 @@ import { MailerService } from '@nestjs-modules/mailer';
     }
 
 
-      async signup(mydto) {
+    async signup(mydto) {
         const salt = await bcrypt.genSalt();
         const hassedpassed = await bcrypt.hash(mydto.password, salt);
         mydto.password= hassedpassed;
         return this.managerRepo.save(mydto);
         }
         
-        async signin(ManagerDTO) {
-            console.log(ManagerDTO.password);
-            const getdata= await this.managerRepo.findOneBy({email:ManagerDTO.email});
-        const matched = await bcrypt.compare(ManagerDTO.password, getdata.password);
-        if(matched){
-            return true;
-        }
-        else{
-            return false;
-        }
-        
+        async signin(mydto){
+   
+            if (mydto.email != null && mydto.password != null) {
+                const mydata = await this.managerRepo.findOneBy({ email: mydto.email });
+                const isMatch = await bcrypt.compare(mydto.password, mydata.password);
+                if (isMatch) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
         }
 
         async sendEmail(to: string, subject: string, text:string): Promise<void>{

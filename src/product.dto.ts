@@ -1,16 +1,21 @@
-import{IsEmail,IsNotEmpty,IsNumber,IsString,Matches,MaxLength,MinLength}from "class-validator";
+import{IsEmail,IsNotEmpty,IsNumber,IsString,Length,Matches,MaxLength,MinLength}from "class-validator";
+import { PrimaryGeneratedColumn } from "typeorm";
 export class ProductDTO{
-    @IsNotEmpty()
-    @IsString({message:"Enter product name here"})
+    
+
+  
     name:string;
 
-    @IsNotEmpty()
-    @IsString({message:"Enter product Quantity"})
+
+    
     quantity: string;
 
-    @IsNotEmpty()
-    @IsString({message:"Enter product price"})
+   
+    
     price:string;
+
+    filename:string;
+
   
-    addedby:number;
+   
 } 
